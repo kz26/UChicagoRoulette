@@ -21,6 +21,8 @@ lobbyRotate = ->
 lobbyRotate()
 
 chatServer.on 'connection', (conn) ->
+	console.log "#{ conn.id } connected"
+
 	conn.writeJSON = (data) ->
 		conn.write JSON.stringify(data)
 	conn.on 'data', (message) ->
@@ -28,7 +30,7 @@ chatServer.on 'connection', (conn) ->
 		if data.type?
 			conn.emit data.type, data
 	conn.on 'initialize', ->
-		console.log "Initializing connection for #{ conn.id }"
+		#console.log "Initializing connection for #{ conn.id }"
 		lobby = lobby.filter (v) ->
 			return v.id != conn.id
 		if lobby.length > 0
@@ -38,14 +40,14 @@ chatServer.on 'connection', (conn) ->
 			console.log "Partnered #{ conn.id } with #{ partner.id }"
 			conn.writeJSON {type: 'sdp', sdp: partner.sdpOffer}
 		else
-			console.log "No partners available for #{ conn.id } - adding to lobby and requesting SDP offer"
+			#console.log "No partners available for #{ conn.id } - adding to lobby and requesting SDP offer"
 			conn.writeJSON {type: 'requestOffer'}
 
 	conn.on 'offer', (data) ->
-		console.log "Received SDP offer from #{ conn.id }"
 		conn.sdpOffer = data.sdp
 		lobby.push(conn)
-		console.log "Conns in lobby: #{ lobby.length }"
+		#console.log "Received SDP offer from #{ conn.id }"
+		#console.log "Conns in lobby: #{ lobby.length }"
 
 	forwardHandler = (data) ->
 		if conn.partner?
