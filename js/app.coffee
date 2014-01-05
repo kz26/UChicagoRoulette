@@ -53,6 +53,13 @@ app.factory 'sockjs', ($rootScope) ->
 			$rootScope.$broadcast "sockjs:#{data.type}", data
 	return sockjs
 
+app.directive 'scrollBottom', ($timeout) ->
+	return (scope, element, attrs) ->
+		scope.$watch 'messages.length', ->
+			$timeout ->
+				element.animate {scrollTop: element.prop("scrollHeight")}, 'fast'
+			, 10
+
 MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 	if /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 		$scope.isMobile = true

@@ -77,6 +77,18 @@ app.factory('sockjs', function($rootScope) {
   return sockjs;
 });
 
+app.directive('scrollBottom', function($timeout) {
+  return function(scope, element, attrs) {
+    return scope.$watch('messages.length', function() {
+      return $timeout(function() {
+        return element.animate({
+          scrollTop: element.prop("scrollHeight")
+        }, 'fast');
+      }, 10);
+    });
+  };
+});
+
 MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
   var dtNow;
   if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
