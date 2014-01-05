@@ -21,6 +21,9 @@ app.factory 'settings', ->
 		}
 	}
 
+app.factory 'moment', ->
+	return moment
+
 app.factory 'sockjs', ($rootScope) ->
 	sockjs = {}
 	sockjs.newSocket = (url) ->
@@ -46,16 +49,21 @@ app.factory 'sockjs', ($rootScope) ->
 			$rootScope.$broadcast "sockjs:#{data.type}", data
 	return sockjs
 
-MainCtrl = ($rootScope, $scope, $timeout, settings, sockjs) ->
+MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 	if /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 		$scope.isMobile = true
 		return
 	if !getUserMedia
 		$scope.noWebRTC = true
 		return
+	
+	dtNow = ->
+		return "[#{ moment().format('MM/DD/YYYY hh:mm A') }]"
+
 	$scope.supported = true
 	$scope.connected = false
 	$scope.waiting = true
+	$scope.messages = []
 	getUserMedia {audio: true, video: true}, (stream) ->
 		attachMediaStream($('#local-video')[0], stream)
 		$scope.toggleLocalStream = (type) ->
@@ -90,6 +98,7 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, sockjs) ->
 						console.log "Attaching remote stream"
 						attachMediaStream($('#remote-video')[0], e.stream)
 						$scope.waiting = false
+						$scope.messages.push "#{ dtNow() } Connected to someone!"
 				sockjs.sendJSON {type: 'initialize'}
 				console.log "Created new RTCPeerConnection"
 			$scope.refresh = ->
@@ -97,6 +106,9 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, sockjs) ->
 					$scope.closeConnection()
 					sockjs.sendJSON {type: 'leave'}
 				$scope.newConnection()
+			$scope.newUser = ->
+				$scope.messages.push "#{ dtNow() } You disconnected"
+				$scope.refresh()
 			$scope.newConnection()
 
 			$rootScope.$on 'sockjs:refresh', ->
@@ -130,6 +142,7 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, sockjs) ->
 			$rootScope.$on 'sockjs:remoteLeft', ->
 				console.log "Remote left"
 				$scope.waiting = true
+				$scope.messages.push "#{ dtNow() } The other party disconnected"
 				$scope.closeConnection()
 				$scope.newConnection()
 
@@ -138,5 +151,6 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, sockjs) ->
 
 		sockjs.newSocket(settings.sockUrl)
 	, (e) ->
-		console.log "Webcam access denied!"
-		return
+		console.log "Webcam access denied - bailing"
+		$scope.$apply ->
+			$scope.gumDenied = true

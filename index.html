@@ -18,6 +18,9 @@
 			<div class="alert alert-danger" ng-show="isMobile">
 				Looks like you're using a mobile browser. Unfortunately, due to compatibility issues, mobile browsers are not supported at this time. 
 			</div>
+			<div class="alert alert-danger" ng-show="gumDenied">
+				If you won't give us access to your webcam, we won't give you access either!	
+			</div>
 			<div class="alert alert-info" ng-show="!connected">
 				<span class="glyphicon glyphicon-signal"></span> Establishing connection to server...
 			</div>
@@ -25,7 +28,7 @@
 				The connection to the server was lost. Try refreshing the page.
 			</div>
 			<div ng-show="supported">
-				<button class="btn btn-primary" ng-click="refresh()">Next user</button>
+				<button class="btn btn-primary" ng-disabled="connected && !waiting" ng-click="nextUser()">Next user</button>
 				<input type="checkbox" ng-model="muteVideo" ng-change="toggleLocalStream('video')"> Mute my video
 				<input type="checkbox" ng-model="muteAudio" ng-change="toggleLocalStream('audio')"> Mute my audio
 				<div style="margin-top: 1em;"></div>
@@ -46,14 +49,16 @@
 					</div>
 				</div>
 				<div class="row">
-					<div id="chat-messages"></div>
+					<div id="chat-messages">
+						<p ng-repeat="m in messages">{{ m }}</p>
+					</div>
 					<input id="chat-submit" type="text" class="form-control">
 				</div>
 			</div>
 
 			<hr>
 			<footer>
-			<p>(C) 2014 CampusRoulette</p>
+				<p>(C) 2014 <a href="https://github.com/kz26">Kevin Zhang</a></p>
 			</footer>
 		</div>
 
@@ -61,6 +66,7 @@
 		<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
 		<script src="js/webrtc-adapter.js"></script>
 		<script src="https://d1fxtkz8shb9d2.cloudfront.net/sockjs-0.3.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.5.0/moment.min.js"></script>
 		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.7/angular.min.js"></script>
 		<script src="js/app.js"></script>
 	</body>

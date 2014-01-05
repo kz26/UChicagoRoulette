@@ -27,6 +27,10 @@ app.factory('settings', function() {
   };
 });
 
+app.factory('moment', function() {
+  return moment;
+});
+
 app.factory('sockjs', function($rootScope) {
   var sockjs;
   sockjs = {};
@@ -67,7 +71,8 @@ app.factory('sockjs', function($rootScope) {
   return sockjs;
 });
 
-MainCtrl = function($rootScope, $scope, $timeout, settings, sockjs) {
+MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
+  var dtNow;
   if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
     $scope.isMobile = true;
     return;
@@ -76,9 +81,13 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, sockjs) {
     $scope.noWebRTC = true;
     return;
   }
+  dtNow = function() {
+    return "[" + (moment().format('MM/DD/YYYY hh:mm A')) + "]";
+  };
   $scope.supported = true;
   $scope.connected = false;
   $scope.waiting = true;
+  $scope.messages = [];
   return getUserMedia({
     audio: true,
     video: true
@@ -131,7 +140,8 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, sockjs) {
           return $scope.$apply(function() {
             console.log("Attaching remote stream");
             attachMediaStream($('#remote-video')[0], e.stream);
-            return $scope.waiting = false;
+            $scope.waiting = false;
+            return $scope.messages.push("" + (dtNow()) + " Connected to someone!");
           });
         };
         sockjs.sendJSON({
@@ -147,6 +157,10 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, sockjs) {
           });
         }
         return $scope.newConnection();
+      };
+      $scope.newUser = function() {
+        $scope.messages.push("" + (dtNow()) + " You disconnected");
+        return $scope.refresh();
       };
       $scope.newConnection();
       $rootScope.$on('sockjs:refresh', function() {
@@ -192,6 +206,7 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, sockjs) {
       $rootScope.$on('sockjs:remoteLeft', function() {
         console.log("Remote left");
         $scope.waiting = true;
+        $scope.messages.push("" + (dtNow()) + " The other party disconnected");
         $scope.closeConnection();
         return $scope.newConnection();
       });
@@ -201,6 +216,9 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, sockjs) {
     });
     return sockjs.newSocket(settings.sockUrl);
   }, function(e) {
-    console.log("Webcam access denied!");
+    console.log("Webcam access denied - bailing");
+    return $scope.$apply(function() {
+      return $scope.gumDenied = true;
+    });
   });
 };
