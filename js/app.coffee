@@ -1,5 +1,9 @@
 app = angular.module 'app', []
 
+app.config ['$sceProvider', ($sceProvider) ->
+	$sceProvider.enabled(false)
+]
+
 app.factory 'settings', ->
 	return {
 		sockUrl: 'http://172.245.60.168:8080/controller',
@@ -98,7 +102,7 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 						console.log "Attaching remote stream"
 						attachMediaStream($('#remote-video')[0], e.stream)
 						$scope.waiting = false
-						$scope.messages.push "#{ dtNow() } Connected to someone!"
+						$scope.messages.push "<span class='blue'>#{ dtNow() } Connected to someone!</span>"
 				sockjs.sendJSON {type: 'initialize'}
 				console.log "Created new RTCPeerConnection"
 			$scope.refresh = ->
@@ -106,9 +110,15 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 					$scope.closeConnection()
 					sockjs.sendJSON {type: 'leave'}
 				$scope.newConnection()
-			$scope.newUser = ->
-				$scope.messages.push "#{ dtNow() } You disconnected"
+			$scope.nextUser = ->
+				$scope.messages.push "<span class='blue'>#{ dtNow() } You disconnected</span>"
+				$scope.messages.push "<span class='blue'>#{ dtNow() } Waiting for a partner...</span>"
 				$scope.refresh()
+			$scope.sendChatMessage = ->
+				if $scope.chatMessage.length > 0
+					sockjs.sendJSON {type: 'chat', message: $scope.chatMessage}
+				$scope.chatMessage = ''
+				
 			$scope.newConnection()
 
 			$rootScope.$on 'sockjs:refresh', ->
@@ -139,10 +149,14 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 				, (err) ->
 					console.log err
 
+			$rootScope.$on 'sockjs:chat', (e, data) ->
+				$scope.messages.push "#{ dtNow() } #{ data.message }"
+
 			$rootScope.$on 'sockjs:remoteLeft', ->
 				console.log "Remote left"
 				$scope.waiting = true
-				$scope.messages.push "#{ dtNow() } The other party disconnected"
+				$scope.messages.push "<span class='blue'>#{ dtNow() } Your partner disconnected</span>"
+				$scope.messages.push "<span class='blue'>#{ dtNow() } Waiting for a partner...</span>"
 				$scope.closeConnection()
 				$scope.newConnection()
 

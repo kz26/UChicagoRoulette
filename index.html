@@ -1,7 +1,7 @@
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width">
-		<title>CampusRoulette</title>
+		<title>WebRTC Roulette</title>
 		<link href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">		
 		<link href="css/main.css" rel="stylesheet">		
 	</head>
@@ -28,12 +28,12 @@
 				The connection to the server was lost. Try refreshing the page.
 			</div>
 			<div ng-show="supported">
-				<button class="btn btn-primary" ng-disabled="connected && !waiting" ng-click="nextUser()">Next user</button>
+				<button class="btn btn-primary" ng-disabled="!(connected && !waiting)" ng-click="nextUser()">Next user</button>
 				<input type="checkbox" ng-model="muteVideo" ng-change="toggleLocalStream('video')"> Mute my video
 				<input type="checkbox" ng-model="muteAudio" ng-change="toggleLocalStream('audio')"> Mute my audio
 				<div style="margin-top: 1em;"></div>
 				<div class="alert alert-info" ng-show="connected && waiting && !closed">
-				<span class="glyphicon glyphicon-time"></span> Waiting for another user...
+				<span class="glyphicon glyphicon-time"></span> Waiting for a partner...
 				</div>
 				<div class="alert alert-success" ng-show="connected && !waiting">
 					<span class="glyphicon glyphicon-ok"></span> CONNECTED
@@ -50,9 +50,11 @@
 				</div>
 				<div class="row">
 					<div id="chat-messages">
-						<p ng-repeat="m in messages">{{ m }}</p>
+						<p ng-repeat="m in messages track by $index" ng-bind-html="m"></p>
 					</div>
-					<input id="chat-submit" type="text" class="form-control">
+					<form id="chat-form" ng-submit="sendChatMessage()">
+						<input id="chat-input" type="text" class="form-control" ng-model="chatMessage" ng-disabled="!(connected && !waiting)" autofocus>
+					</form>
 				</div>
 			</div>
 

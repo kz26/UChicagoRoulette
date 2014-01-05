@@ -1,5 +1,6 @@
 http = require 'http'
 sockjs = require 'sockjs'
+sanitize = require('validator').sanitize
 
 chatServer = sockjs.createServer({
 	prefix: '/controller',
@@ -58,7 +59,10 @@ chatServer.on 'connection', (conn) ->
 		forwardHandler data
 
 	conn.on 'chat', (data) ->
-		forwardHandler data
+		if data.message?
+			data.message = sanitize(data.message).entityEncode()
+			conn.writeJSON data
+			forwardHandler data
 
 	leaveHandler = ->
 		console.log "#{ conn.id } disconnected"

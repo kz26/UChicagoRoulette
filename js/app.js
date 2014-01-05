@@ -3,6 +3,12 @@ var MainCtrl, app;
 
 app = angular.module('app', []);
 
+app.config([
+  '$sceProvider', function($sceProvider) {
+    return $sceProvider.enabled(false);
+  }
+]);
+
 app.factory('settings', function() {
   return {
     sockUrl: 'http://172.245.60.168:8080/controller',
@@ -141,7 +147,7 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
             console.log("Attaching remote stream");
             attachMediaStream($('#remote-video')[0], e.stream);
             $scope.waiting = false;
-            return $scope.messages.push("" + (dtNow()) + " Connected to someone!");
+            return $scope.messages.push("<span class='blue'>" + (dtNow()) + " Connected to someone!</span>");
           });
         };
         sockjs.sendJSON({
@@ -158,9 +164,19 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
         }
         return $scope.newConnection();
       };
-      $scope.newUser = function() {
-        $scope.messages.push("" + (dtNow()) + " You disconnected");
+      $scope.nextUser = function() {
+        $scope.messages.push("<span class='blue'>" + (dtNow()) + " You disconnected</span>");
+        $scope.messages.push("<span class='blue'>" + (dtNow()) + " Waiting for a partner...</span>");
         return $scope.refresh();
+      };
+      $scope.sendChatMessage = function() {
+        if ($scope.chatMessage.length > 0) {
+          sockjs.sendJSON({
+            type: 'chat',
+            message: $scope.chatMessage
+          });
+        }
+        return $scope.chatMessage = '';
       };
       $scope.newConnection();
       $rootScope.$on('sockjs:refresh', function() {
@@ -203,10 +219,14 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
           return console.log(err);
         });
       });
+      $rootScope.$on('sockjs:chat', function(e, data) {
+        return $scope.messages.push("" + (dtNow()) + " " + data.message);
+      });
       $rootScope.$on('sockjs:remoteLeft', function() {
         console.log("Remote left");
         $scope.waiting = true;
-        $scope.messages.push("" + (dtNow()) + " The other party disconnected");
+        $scope.messages.push("<span class='blue'>" + (dtNow()) + " Your partner disconnected</span>");
+        $scope.messages.push("<span class='blue'>" + (dtNow()) + " Waiting for a partner...</span>");
         $scope.closeConnection();
         return $scope.newConnection();
       });
