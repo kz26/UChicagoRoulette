@@ -42,8 +42,11 @@ lobby = []
 lobbyRotate = ->
 	if lobby.length > 0
 		user = lobby.shift()
-		user.writeJSON {type: 'refresh'}
-	setTimeout lobbyRotate, 5000
+		if lobby.length > 0
+			user.writeJSON {type: 'refresh'}
+		else
+			lobby.push user
+	setTimeout lobbyRotate, 2500
 lobbyRotate()
 
 chatServer.on 'connection', (conn) ->
