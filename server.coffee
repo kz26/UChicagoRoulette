@@ -1,15 +1,41 @@
+cidrMatch = require 'cidr_match'
+express = require 'express'
 http = require 'http'
-sockjs = require 'sockjs'
 sanitize = require('validator').sanitize
+sockjs = require 'sockjs'
 
-chatServer = sockjs.createServer({
-	prefix: '/controller',
-	sockjs_url: 'http://cdn.sockjs.org/sockjs-0.3.min.js'
-})
+app = express()
+app.enable 'trust proxy'
+app.use express.logger()
+app.use express.compress()
+app.use "/static", express.static("#{ __dirname }/static")
 
-httpServer = http.createServer()
-chatServer.installHandlers(httpServer)
-httpServer.listen(8080)
+app.set 'ipWhitelist', [
+	'128.135.0.0/16',
+	'205.208.0.0/17',
+	'165.68.0.0/16',
+	'64.107.48.0/23'
+]
+
+app.get '/', (req, res) ->
+	for ipr in app.get('ipWhitelist')
+		if cidrMatch.cidr_match req.ip, ipr
+			res.sendfile "#{ __dirname }/index.html"	
+			return
+	res.sendfile "#{ __dirname }/bad_ip.html"
+	
+
+chatServer = sockjs.createServer {
+	prefix: '/server',
+	sockjs_url: 'http://cdn.sockjs.org/sockjs-0.3.min.js',
+	log: (severity, message) ->
+		if severity == 'error'
+			console.log message
+}
+
+httpServer = http.createServer app
+chatServer.installHandlers httpServer
+httpServer.listen 10001, '127.0.0.1'
 
 lobby = []
 
@@ -17,7 +43,7 @@ lobbyRotate = ->
 	if lobby.length > 0
 		user = lobby.shift()
 		user.writeJSON {type: 'refresh'}
-	setTimeout lobbyRotate, 4000
+	setTimeout lobbyRotate, 5000
 lobbyRotate()
 
 chatServer.on 'connection', (conn) ->

@@ -6,7 +6,7 @@ app.config ['$sceProvider', ($sceProvider) ->
 
 app.factory 'settings', ->
 	return {
-		sockUrl: 'http://172.245.60.168:8080/controller',
+		sockUrl: 'http://uchicagoroulette.com/server',
 		gumConf: {
 			audio: true,
 			video: {
@@ -20,6 +20,7 @@ app.factory 'settings', ->
 		},
 		peerConf: {
 			iceServers: [
+				{url: 'turn:172.245.60.168:3478', username: 'uchicago', credential: 'roulette'}
 				{url: 'stun:stun.l.google.com:19302'}
 			]
 		}
