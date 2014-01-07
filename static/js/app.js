@@ -26,11 +26,11 @@ app.factory('settings', function() {
     peerConf: {
       iceServers: [
         {
+          url: 'stun:stun.l.google.com:19302'
+        }, {
           url: 'turn:172.245.60.168:3478',
           username: 'uchicago',
           credential: 'roulette'
-        }, {
-          url: 'stun:stun.l.google.com:19302'
         }
       ]
     }
