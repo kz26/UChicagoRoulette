@@ -130,6 +130,8 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
     conn = null;
     $rootScope.$on('sockjs:open', function() {
       $scope.connected = true;
+      $scope.messages.push("<span class='blue'>" + (dtNow()) + " Connection to server established.</span>");
+      $scope.messages.push("<span class='blue'>" + (dtNow()) + " Waiting for a partner...</span>");
       $scope.closeConnection = function() {
         try {
           conn.close();

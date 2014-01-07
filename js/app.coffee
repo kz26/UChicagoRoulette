@@ -88,6 +88,8 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 		conn = null
 		$rootScope.$on 'sockjs:open', ->
 			$scope.connected = true
+			$scope.messages.push "<span class='blue'>#{ dtNow() } Connection to server established.</span>"
+			$scope.messages.push "<span class='blue'>#{ dtNow() } Waiting for a partner...</span>"
 			$scope.closeConnection = ->
 				try
 					conn.close()
