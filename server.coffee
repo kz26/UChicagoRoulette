@@ -1,6 +1,7 @@
 cidrMatch = require 'cidr_match'
 express = require 'express'
 http = require 'http'
+moment = require 'moment'
 sanitize = require('validator').sanitize
 sockjs = require 'sockjs'
 
@@ -16,8 +17,12 @@ app.set 'ipWhitelist', [
 	'165.68.0.0/16',
 	'64.107.48.0/23'
 ]
+app.set 'overridePassword', 'worldoftanks'
 
 app.get '/', (req, res) ->
+	if req.query.override == app.get('overridePassword') 
+		res.sendfile "#{ __dirname }/index.html"
+		return
 	for ipr in app.get('ipWhitelist')
 		if cidrMatch.cidr_match req.ip, ipr
 			res.sendfile "#{ __dirname }/index.html"	
@@ -48,6 +53,9 @@ lobbyRotate = ->
 			lobby.push user
 	setTimeout lobbyRotate, 2500
 lobbyRotate()
+
+dtNow = ->
+	return "[#{ moment().format('MM/DD/YYYY hh:mm A') }]"
 
 chatServer.on 'connection', (conn) ->
 	console.log "#{ conn.id } connected"
@@ -90,10 +98,11 @@ chatServer.on 'connection', (conn) ->
 		forwardHandler data
 
 	conn.on 'chat', (data) ->
-		if data.message?
+		if data.message? and conn.partner?
 			data.message = sanitize(data.message).entityEncode()
 			conn.writeJSON data
 			forwardHandler data
+			console.log "#{ dtNow() } #{ data.message }"
 
 	leaveHandler = ->
 		console.log "#{ conn.id } disconnected"

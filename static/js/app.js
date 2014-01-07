@@ -28,7 +28,7 @@ app.factory('settings', function() {
         {
           url: 'stun:stun.l.google.com:19302'
         }, {
-          url: 'turn:172.245.60.168:3478',
+          url: 'turn:wlsvps1.mooo.com:3478',
           username: 'uchicago',
           credential: 'roulette'
         }
