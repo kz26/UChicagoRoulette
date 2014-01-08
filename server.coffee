@@ -54,11 +54,11 @@ lobbyRotate = ->
 	if lobby.length > 0
 		user = lobby.shift()
 		user.writeJSON {type: 'refresh'}
-	setTimeout lobbyRotate, 5000
+	setTimeout lobbyRotate, 15000
 lobbyRotate()
 
 dtNow = ->
-	return "[#{ moment().format('MM/DD/YYYY hh:mm A') }]"
+	return "[#{ moment().format('MM/DD/YYYY hh:mm:ss A') }]"
 
 chatServer.on 'connection', (conn) ->
 	conn.writeJSON = (data) ->
@@ -125,8 +125,8 @@ chatServer.on 'connection', (conn) ->
 	conn.on 'chat', (data) ->
 		if data.message? and conn.partner?
 			data.message = sanitize(data.message).entityEncode()
-			conn.writeJSON data
-			forwardHandler data
+			conn.writeJSON {type: 'chat', self: true, message: data.message}
+			conn.partner.writeJSON {type: 'chat', self: false, message: data.message}
 			console.log "#{ dtNow() } #{ data.message }"
 
 	leaveHandler = ->

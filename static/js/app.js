@@ -86,17 +86,13 @@ app.directive('scrollBottom', function($timeout) {
 });
 
 MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
-  var dtNow, iceCandidates;
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-    $scope.isMobile = true;
-    return;
-  }
+  var dtNow;
   if (!getUserMedia) {
     $scope.noWebRTC = true;
     return;
   }
   dtNow = function() {
-    return "[" + (moment().format('MM/DD/YYYY hh:mm A')) + "]";
+    return "[" + (moment().format('MM/DD/YYYY hh:mm:ss A')) + "]";
   };
   $scope.supported = true;
   $scope.connected = false;
@@ -104,7 +100,6 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
   $scope.localVerified = false;
   $scope.remoteVerified = false;
   $scope.messages = [];
-  iceCandidates = [];
   return getUserMedia({
     audio: true,
     video: true
@@ -129,13 +124,15 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
     conn = null;
     $rootScope.$on('sockjs:open', function() {
       $scope.connected = true;
-      $scope.messages.push("<span class='blue'>" + (dtNow()) + " Connection to server established.</span>");
-      $scope.messages.push("<span class='blue'>" + (dtNow()) + " Waiting for a partner...</span>");
+      $scope.messages.push("<span class='text-success'>" + (dtNow()) + " Connection to matchmaking server established.</span>");
+      $scope.messages.push("<span class='text-info'>" + (dtNow()) + " Waiting for a partner...</span>");
       $scope.closeConnection = function() {
+        var e;
         try {
           conn.close();
           console.log("Closed existing RTCPeerConnection");
         } catch (_error) {
+          e = _error;
           console.log("RTCPeerConnection already closed");
         }
         return $scope.waiting = true;
@@ -160,7 +157,7 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
             console.log("Attaching remote stream");
             attachMediaStream($('#remote-video')[0], e.stream);
             $scope.waiting = false;
-            return $scope.messages.push("<span class='blue'>" + (dtNow()) + " Connected to someone!</span>");
+            return $scope.messages.push("<span class='text-success'>" + (dtNow()) + " Connected to someone!</span>");
           });
         };
         $timeout(function() {
@@ -172,16 +169,20 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
       };
       $scope.refresh = function() {
         if (!$scope.waiting) {
-          $scope.closeConnection();
           sockjs.sendJSON({
             type: 'leave'
           });
         }
+        $scope.closeConnection();
         return $scope.newConnection();
       };
-      $scope.nextUser = function() {
-        $scope.messages.push("<span class='blue'>" + (dtNow()) + " You disconnected</span>");
-        $scope.messages.push("<span class='blue'>" + (dtNow()) + " Waiting for a partner...</span>");
+      $scope.nextUser = function(local) {
+        if (local) {
+          $scope.messages.push("<span class='text-danger'>" + (dtNow()) + " You disconnected</span>");
+        } else {
+          $scope.messages.push("<span class='text-danger'>" + (dtNow()) + " Your partner disconnected</span>");
+        }
+        $scope.messages.push("<span class='text-info'>" + (dtNow()) + " Waiting for a partner...</span>");
         return $scope.refresh();
       };
       $scope.sendChatMessage = function() {
@@ -211,18 +212,12 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
         });
       });
       $rootScope.$on('sockjs:candidate', function(e, data) {
-        iceCandidates.push(new RTCIceCandidate(data.candidate));
-        return console.log("received remote ICE candidate");
+        conn.addIceCandidate(new RTCIceCandidate(data.candidate));
+        return console.log("added remote ICE candidate");
       });
       $rootScope.$on('sockjs:sdp', function(e, data) {
         console.log("received remote SDP");
         return conn.setRemoteDescription(new RTCSessionDescription(data.sdp), function() {
-          var ic, _i, _len;
-          for (_i = 0, _len = iceCandidates.length; _i < _len; _i++) {
-            ic = iceCandidates[_i];
-            conn.addIceCandidate(ic);
-          }
-          iceCandidates = [];
           if (conn.remoteDescription.type === 'offer') {
             return conn.createAnswer(function(desc) {
               return conn.setLocalDescription(desc, function() {
@@ -241,7 +236,14 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
         });
       });
       $rootScope.$on('sockjs:chat', function(e, data) {
-        return $scope.messages.push("" + (dtNow()) + " " + data.message);
+        var from;
+        from = null;
+        if (data.self) {
+          from = 'You';
+        } else {
+          from = 'Them';
+        }
+        return $scope.messages.push("" + (dtNow()) + " <b>" + from + ":</b> " + data.message);
       });
       $rootScope.$on('sockjs:localVerified', function(e, data) {
         return $scope.localVerified = data.verified;
@@ -252,10 +254,7 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
       $rootScope.$on('sockjs:remoteLeft', function() {
         console.log("Remote left");
         $scope.waiting = true;
-        $scope.messages.push("<span class='blue'>" + (dtNow()) + " Your partner disconnected</span>");
-        $scope.messages.push("<span class='blue'>" + (dtNow()) + " Waiting for a partner...</span>");
-        $scope.closeConnection();
-        return $scope.newConnection();
+        return $scope.nextUser(false);
       });
       return $rootScope.$on('sockjs:close', function() {
         return $scope.closed = true;

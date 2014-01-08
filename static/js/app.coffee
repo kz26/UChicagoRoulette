@@ -66,15 +66,12 @@ app.directive 'scrollBottom', ($timeout) ->
 			, 10
 
 MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
-	if /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-		$scope.isMobile = true
-		return
 	if !getUserMedia
 		$scope.noWebRTC = true
 		return
 	
 	dtNow = ->
-		return "[#{ moment().format('MM/DD/YYYY hh:mm A') }]"
+		return "[#{ moment().format('MM/DD/YYYY hh:mm:ss A') }]"
 
 	$scope.supported = true
 	$scope.connected = false
@@ -82,7 +79,6 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 	$scope.localVerified = false
 	$scope.remoteVerified = false
 	$scope.messages = []
-	iceCandidates = []
 	getUserMedia {audio: true, video: true}, (stream) ->
 		attachMediaStream($('#local-video')[0], stream)
 		$scope.toggleLocalStream = (type) ->
@@ -96,13 +92,13 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 		conn = null
 		$rootScope.$on 'sockjs:open', ->
 			$scope.connected = true
-			$scope.messages.push "<span class='blue'>#{ dtNow() } Connection to server established.</span>"
-			$scope.messages.push "<span class='blue'>#{ dtNow() } Waiting for a partner...</span>"
+			$scope.messages.push "<span class='text-success'>#{ dtNow() } Connection to matchmaking server established.</span>"
+			$scope.messages.push "<span class='text-info'>#{ dtNow() } Waiting for a partner...</span>"
 			$scope.closeConnection = ->
 				try
 					conn.close()
 					console.log "Closed existing RTCPeerConnection"
-				catch
+				catch e
 					console.log "RTCPeerConnection already closed"
 				$scope.waiting = true
 			$scope.newConnection = ->
@@ -119,19 +115,22 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 						console.log "Attaching remote stream"
 						attachMediaStream($('#remote-video')[0], e.stream)
 						$scope.waiting = false
-						$scope.messages.push "<span class='blue'>#{ dtNow() } Connected to someone!</span>"
+						$scope.messages.push "<span class='text-success'>#{ dtNow() } Connected to someone!</span>"
 				$timeout ->
 					sockjs.sendJSON {type: 'initialize'}
 				, 500
 				console.log "Created new RTCPeerConnection"
 			$scope.refresh = ->
 				if !$scope.waiting
-					$scope.closeConnection()
 					sockjs.sendJSON {type: 'leave'}
+				$scope.closeConnection()
 				$scope.newConnection()
-			$scope.nextUser = ->
-				$scope.messages.push "<span class='blue'>#{ dtNow() } You disconnected</span>"
-				$scope.messages.push "<span class='blue'>#{ dtNow() } Waiting for a partner...</span>"
+			$scope.nextUser = (local) -> # local = true if disconnect was initiated locally
+				if local
+					$scope.messages.push "<span class='text-danger'>#{ dtNow() } You disconnected</span>"
+				else
+					$scope.messages.push "<span class='text-danger'>#{ dtNow() } Your partner disconnected</span>"
+				$scope.messages.push "<span class='text-info'>#{ dtNow() } Waiting for a partner...</span>"
 				$scope.refresh()
 			$scope.sendChatMessage = ->
 				if $scope.chatMessage.length > 0
@@ -152,15 +151,12 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 					console.log err
 
 			$rootScope.$on 'sockjs:candidate', (e, data) ->
-				iceCandidates.push new RTCIceCandidate(data.candidate)
-				console.log "received remote ICE candidate"
+				conn.addIceCandidate new RTCIceCandidate(data.candidate)
+				console.log "added remote ICE candidate"
 
 			$rootScope.$on 'sockjs:sdp',(e, data) ->
 				console.log "received remote SDP"
 				conn.setRemoteDescription new RTCSessionDescription(data.sdp), ->
-					for ic in iceCandidates
-						conn.addIceCandidate ic
-					iceCandidates = []	
 					if conn.remoteDescription.type == 'offer'
 						conn.createAnswer (desc) ->
 							conn.setLocalDescription desc, ->
@@ -172,7 +168,12 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 					console.log err
 
 			$rootScope.$on 'sockjs:chat', (e, data) ->
-				$scope.messages.push "#{ dtNow() } #{ data.message }"
+				from = null
+				if data.self
+					from = 'You'
+				else
+					from = 'Them'
+				$scope.messages.push "#{ dtNow() } <b>#{ from }:</b> #{ data.message }"
 
 			$rootScope.$on 'sockjs:localVerified', (e, data) ->
 				$scope.localVerified = data.verified
@@ -182,10 +183,7 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 			$rootScope.$on 'sockjs:remoteLeft', ->
 				console.log "Remote left"
 				$scope.waiting = true
-				$scope.messages.push "<span class='blue'>#{ dtNow() } Your partner disconnected</span>"
-				$scope.messages.push "<span class='blue'>#{ dtNow() } Waiting for a partner...</span>"
-				$scope.closeConnection()
-				$scope.newConnection()
+				$scope.nextUser(false)
 
 			$rootScope.$on 'sockjs:close', ->
 				$scope.closed = true

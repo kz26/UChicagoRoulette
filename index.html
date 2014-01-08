@@ -9,7 +9,7 @@
 	<body>
 
 		<div class="alert alert-warning">
-			A desktop version of Firefox &ge;= 26.0 or Chrome &ge;= 28 is recommended.
+			Firefox &ge;= 26.0 or Chrome &ge;= 28 is recommended. Internet Explorer and Safari are not supported.
 		</div>
 
 		<div class="container" ng-app="app" ng-controller="MainCtrl" ng-cloak>
@@ -19,16 +19,12 @@
 			</div>
 			<div class="alert alert-danger" ng-show="noWebRTC">
 				Sorry, your browser doesn't support WebRTC! Please use a <a href="http://en.wikipedia.org/wiki/WebRTC#Support">supported browser</a>.<br>
-				Please note that mobile browsers are not supported at this time.
-			</div>
-			<div class="alert alert-danger" ng-show="isMobile">
-				Looks like you're using a mobile browser. Unfortunately, due to compatibility issues, mobile browsers are not supported at this time. 
 			</div>
 			<div class="alert alert-danger" ng-show="gumDenied">
 				If you won't give us access to your webcam, we won't give you access either!	
 			</div>
 			<div ng-show="supported">
-				<button class="btn btn-primary" ng-disabled="!(connected && !waiting)" ng-click="nextUser()">Next user</button>
+				<button class="btn btn-primary" ng-disabled="!(connected && !waiting)" ng-click="nextUser(true)">Next user</button>
 				<input type="checkbox" ng-model="muteVideo" ng-change="toggleLocalStream('video')"> Mute my video
 				<input type="checkbox" ng-model="muteAudio" ng-change="toggleLocalStream('audio')"> Mute my audio
 				<div style="margin-top: 1em;"></div>
