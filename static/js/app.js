@@ -24,15 +24,7 @@ app.factory('settings', function() {
       }
     },
     peerConf: {
-      iceServers: [
-        {
-          url: 'stun:stun.l.google.com:19302'
-        }, {
-          url: 'turn:wlsvps1.mooo.com:3478',
-          username: 'uchicago',
-          credential: 'roulette'
-        }
-      ]
+      iceServers: [createIceServer('stun:stun.l.google.com:19302', createIceServer('stun:stunserver.org', createIceServer('stun:stun01.sipphone.com', createIceServer('stun:stun.ekiga.net', createIceServer('stun:stun.fwdnet.net', createIceServer('turn:wlsvps1.mooo.com:3478', 'uchicago', 'roulette'))))))]
     }
   };
 });
@@ -109,6 +101,7 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
   $scope.supported = true;
   $scope.connected = false;
   $scope.waiting = true;
+  $scope.remoteVerified = false;
   $scope.messages = [];
   return getUserMedia({
     audio: true,
@@ -168,9 +161,11 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
             return $scope.messages.push("<span class='blue'>" + (dtNow()) + " Connected to someone!</span>");
           });
         };
-        sockjs.sendJSON({
-          type: 'initialize'
-        });
+        $timeout(function() {
+          return sockjs.sendJSON({
+            type: 'initialize'
+          });
+        }, 1000);
         return console.log("Created new RTCPeerConnection");
       };
       $scope.refresh = function() {
@@ -239,6 +234,9 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
       });
       $rootScope.$on('sockjs:chat', function(e, data) {
         return $scope.messages.push("" + (dtNow()) + " " + data.message);
+      });
+      $rootScope.$on('sockjs:remoteVerified', function(e, data) {
+        return $scope.remoteVerified = data.verified;
       });
       $rootScope.$on('sockjs:remoteLeft', function() {
         console.log("Remote left");

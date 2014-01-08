@@ -17,17 +17,22 @@ app.set 'ipWhitelist', [
 	'165.68.0.0/16',
 	'64.107.48.0/23'
 ]
+app.disable 'enableWhitelist'
+
 app.set 'overridePassword', 'worldoftanks'
 
 app.get '/', (req, res) ->
-	if req.query.override == app.get('overridePassword') 
-		res.sendfile "#{ __dirname }/index.html"
-		return
-	for ipr in app.get('ipWhitelist')
-		if cidrMatch.cidr_match req.ip, ipr
-			res.sendfile "#{ __dirname }/index.html"	
+	if app.get 'enableWhitelist'
+		if req.query.override == app.get('overridePassword') 
+			res.sendfile "#{ __dirname }/index.html"
 			return
-	res.sendfile "#{ __dirname }/bad_ip.html"
+		for ipr in app.get('ipWhitelist')
+			if cidrMatch.cidr_match req.ip, ipr
+				res.sendfile "#{ __dirname }/index.html"	
+				return
+		res.sendfile "#{ __dirname }/bad_ip.html"
+	else
+		res.sendfile "#{ __dirname }/index.html"
 	
 
 chatServer = sockjs.createServer {
@@ -58,7 +63,19 @@ dtNow = ->
 	return "[#{ moment().format('MM/DD/YYYY hh:mm A') }]"
 
 chatServer.on 'connection', (conn) ->
-	console.log "#{ conn.id } connected"
+
+	if app.get('trust proxy')
+		if conn.headers['x-forwarded-for']?
+			conn.ip = conn.headers['x-forwarded-for'].split(', ')[0]
+	else
+		conn.ip = conn.remoteAddress
+	conn.verified = false
+	for ipr in app.get('ipWhitelist')
+		if cidrMatch.cidr_match conn.ip, ipr
+			conn.verified = true
+			break
+
+	console.log "#{ conn.id } (verified: #{ conn.verified }) connected from #{ conn.ip }"
 
 	conn.writeJSON = (data) ->
 		conn.write JSON.stringify(data)
@@ -74,8 +91,10 @@ chatServer.on 'connection', (conn) ->
 			partner = lobby.shift()
 			conn.partner = partner
 			partner.partner = conn
-			console.log "Partnered #{ conn.id } with #{ partner.id }"
 			conn.writeJSON {type: 'sdp', sdp: partner.sdpOffer}
+			conn.writeJSON {type: 'remoteVerified', verified: partner.verified}
+			partner.writeJSON {type: 'remoteVerified', verified: conn.verified}
+			console.log "Partnered #{ conn.id } with #{ partner.id }"
 		else
 			#console.log "No partners available for #{ conn.id } - adding to lobby and requesting SDP offer"
 			conn.writeJSON {type: 'requestOffer'}

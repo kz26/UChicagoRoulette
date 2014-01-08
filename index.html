@@ -27,7 +27,7 @@
 			<div class="alert alert-danger" ng-show="gumDenied">
 				If you won't give us access to your webcam, we won't give you access either!	
 			</div>
-			<div class="alert alert-info" ng-show="!connected">
+			<div class="alert alert-info" ng-show="!connected && !closed">
 				<span class="glyphicon glyphicon-signal"></span> Establishing connection to server...
 			</div>
 			<div class="alert alert-danger" ng-show="closed">
@@ -38,7 +38,7 @@
 				<input type="checkbox" ng-model="muteVideo" ng-change="toggleLocalStream('video')"> Mute my video
 				<input type="checkbox" ng-model="muteAudio" ng-change="toggleLocalStream('audio')"> Mute my audio
 				<div style="margin-top: 1em;"></div>
-				<div class="alert alert-info" ng-show="connected && waiting && !closed">
+				<div class="alert alert-info" ng-show="connected && waiting">
 				<span class="glyphicon glyphicon-time"></span> Waiting for a partner...
 				</div>
 				<div class="alert alert-success" ng-show="connected && !waiting">
@@ -51,6 +51,9 @@
 					</div>
 					<div class="col-md-6">
 						<h1>Not You</h1>
+						<div class="alert alert-warning" ng-show="connected && !waiting && !remoteVerified">
+							<span class="glyphicon glyphicon-exclamation-sign"> Do they even go to UChicago?
+						</div>
 						<video id="remote-video" class="webcam" autoplay poster="static/img/video-placeholder.png"></video>
 					</div>
 				</div>

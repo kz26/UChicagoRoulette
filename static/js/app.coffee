@@ -20,8 +20,12 @@ app.factory 'settings', ->
 		},
 		peerConf: {
 			iceServers: [
-				{url: 'stun:stun.l.google.com:19302'}
-				{url: 'turn:wlsvps1.mooo.com:3478', username: 'uchicago', credential: 'roulette'}
+				createIceServer 'stun:stun.l.google.com:19302',
+				createIceServer 'stun:stunserver.org',
+				createIceServer 'stun:stun01.sipphone.com',
+				createIceServer 'stun:stun.ekiga.net',
+				createIceServer 'stun:stun.fwdnet.net',
+				createIceServer 'turn:wlsvps1.mooo.com:3478', 'uchicago', 'roulette'
 			]
 		}
 	}
@@ -75,6 +79,7 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 	$scope.supported = true
 	$scope.connected = false
 	$scope.waiting = true
+	$scope.remoteVerified = false
 	$scope.messages = []
 	getUserMedia {audio: true, video: true}, (stream) ->
 		attachMediaStream($('#local-video')[0], stream)
@@ -113,7 +118,9 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 						attachMediaStream($('#remote-video')[0], e.stream)
 						$scope.waiting = false
 						$scope.messages.push "<span class='blue'>#{ dtNow() } Connected to someone!</span>"
-				sockjs.sendJSON {type: 'initialize'}
+				$timeout ->
+					sockjs.sendJSON {type: 'initialize'}
+				, 1000
 				console.log "Created new RTCPeerConnection"
 			$scope.refresh = ->
 				if !$scope.waiting
@@ -161,6 +168,9 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 
 			$rootScope.$on 'sockjs:chat', (e, data) ->
 				$scope.messages.push "#{ dtNow() } #{ data.message }"
+
+			$rootScope.$on 'sockjs:remoteVerified', (e, data) ->
+				$scope.remoteVerified = data.verified
 
 			$rootScope.$on 'sockjs:remoteLeft', ->
 				console.log "Remote left"
