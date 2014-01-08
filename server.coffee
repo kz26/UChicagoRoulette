@@ -49,14 +49,12 @@ httpServer.listen 10001, '127.0.0.1'
 
 lobby = []
 
+# lobbyRotate is needed to force refreshing of SDP offers
 lobbyRotate = ->
 	if lobby.length > 0
 		user = lobby.shift()
-		if lobby.length > 0
-			user.writeJSON {type: 'refresh'}
-		else
-			lobby.push user
-	setTimeout lobbyRotate, 2500
+		user.writeJSON {type: 'refresh'}
+	setTimeout lobbyRotate, 5000
 lobbyRotate()
 
 dtNow = ->
@@ -104,7 +102,6 @@ chatServer.on 'connection', (conn) ->
 			partner.writeJSON {type: 'remoteVerified', verified: conn.verified}
 			console.log "Partnered #{ conn.id } with #{ partner.id }"
 		else
-			#console.log "No partners available for #{ conn.id } - adding to lobby and requesting SDP offer"
 			conn.writeJSON {type: 'requestOffer'}
 
 	conn.on 'offer', (data) ->

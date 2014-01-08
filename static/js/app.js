@@ -167,7 +167,7 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
           return sockjs.sendJSON({
             type: 'initialize'
           });
-        }, 1000);
+        }, 500);
         return console.log("Created new RTCPeerConnection");
       };
       $scope.refresh = function() {

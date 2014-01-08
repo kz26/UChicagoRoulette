@@ -122,7 +122,7 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 						$scope.messages.push "<span class='blue'>#{ dtNow() } Connected to someone!</span>"
 				$timeout ->
 					sockjs.sendJSON {type: 'initialize'}
-				, 1000
+				, 500
 				console.log "Created new RTCPeerConnection"
 			$scope.refresh = ->
 				if !$scope.waiting
