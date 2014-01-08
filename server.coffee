@@ -63,6 +63,8 @@ dtNow = ->
 	return "[#{ moment().format('MM/DD/YYYY hh:mm A') }]"
 
 chatServer.on 'connection', (conn) ->
+	conn.writeJSON = (data) ->
+		conn.write JSON.stringify(data)
 
 	if app.get('trust proxy')
 		if conn.headers['x-forwarded-for']?
@@ -75,10 +77,10 @@ chatServer.on 'connection', (conn) ->
 			conn.verified = true
 			break
 
+	conn.iceCandidates = []
+	conn.writeJSON {type: 'localVerified', verified: conn.verified}
 	console.log "#{ conn.id } (verified: #{ conn.verified }) connected from #{ conn.ip }"
 
-	conn.writeJSON = (data) ->
-		conn.write JSON.stringify(data)
 	conn.on 'data', (message) ->
 		data = JSON.parse(message)
 		if data.type?
@@ -92,6 +94,12 @@ chatServer.on 'connection', (conn) ->
 			conn.partner = partner
 			partner.partner = conn
 			conn.writeJSON {type: 'sdp', sdp: partner.sdpOffer}
+			for ic in partner.iceCandidates
+				conn.writeJSON {type: 'candidate', candidate: ic}
+			partner.iceCandidates = []
+			for ic in conn.iceCandidates
+				conn.writeJSON {type: 'candidate', candidate: ic}
+			conn.iceCandidates = []
 			conn.writeJSON {type: 'remoteVerified', verified: partner.verified}
 			partner.writeJSON {type: 'remoteVerified', verified: conn.verified}
 			console.log "Partnered #{ conn.id } with #{ partner.id }"
@@ -114,6 +122,7 @@ chatServer.on 'connection', (conn) ->
 
 
 	conn.on 'candidate', (data) ->
+		conn.iceCandidates.push data.candidate
 		forwardHandler data
 
 	conn.on 'chat', (data) ->

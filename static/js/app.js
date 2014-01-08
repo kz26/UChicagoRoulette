@@ -24,7 +24,7 @@ app.factory('settings', function() {
       }
     },
     peerConf: {
-      iceServers: [createIceServer('stun:stun.l.google.com:19302', createIceServer('stun:stunserver.org', createIceServer('stun:stun01.sipphone.com', createIceServer('stun:stun.ekiga.net', createIceServer('stun:stun.fwdnet.net', createIceServer('turn:wlsvps1.mooo.com:3478', 'uchicago', 'roulette'))))))]
+      iceServers: [createIceServer('stun:stun.l.google.com:19302'), createIceServer('stun:stunserver.org'), createIceServer('stun:stun01.sipphone.com'), createIceServer('stun:stun.ekiga.net'), createIceServer('stun:stun.fwdnet.net'), createIceServer('turn:wlsvps1.mooo.com:3478', 'uchicago', 'roulette')]
     }
   };
 });
@@ -86,7 +86,7 @@ app.directive('scrollBottom', function($timeout) {
 });
 
 MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
-  var dtNow;
+  var dtNow, iceCandidates;
   if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
     $scope.isMobile = true;
     return;
@@ -101,8 +101,10 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
   $scope.supported = true;
   $scope.connected = false;
   $scope.waiting = true;
+  $scope.localVerified = false;
   $scope.remoteVerified = false;
   $scope.messages = [];
+  iceCandidates = [];
   return getUserMedia({
     audio: true,
     video: true
@@ -209,12 +211,18 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
         });
       });
       $rootScope.$on('sockjs:candidate', function(e, data) {
-        console.log("received remote candidate");
-        return conn.addIceCandidate(new RTCIceCandidate(data.candidate));
+        iceCandidates.push(new RTCIceCandidate(data.candidate));
+        return console.log("received remote ICE candidate");
       });
       $rootScope.$on('sockjs:sdp', function(e, data) {
         console.log("received remote SDP");
         return conn.setRemoteDescription(new RTCSessionDescription(data.sdp), function() {
+          var ic, _i, _len;
+          for (_i = 0, _len = iceCandidates.length; _i < _len; _i++) {
+            ic = iceCandidates[_i];
+            conn.addIceCandidate(ic);
+          }
+          iceCandidates = [];
           if (conn.remoteDescription.type === 'offer') {
             return conn.createAnswer(function(desc) {
               return conn.setLocalDescription(desc, function() {
@@ -234,6 +242,9 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
       });
       $rootScope.$on('sockjs:chat', function(e, data) {
         return $scope.messages.push("" + (dtNow()) + " " + data.message);
+      });
+      $rootScope.$on('sockjs:localVerified', function(e, data) {
+        return $scope.localVerified = data.verified;
       });
       $rootScope.$on('sockjs:remoteVerified', function(e, data) {
         return $scope.remoteVerified = data.verified;

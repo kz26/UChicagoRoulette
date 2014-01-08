@@ -20,12 +20,12 @@ app.factory 'settings', ->
 		},
 		peerConf: {
 			iceServers: [
-				createIceServer 'stun:stun.l.google.com:19302',
-				createIceServer 'stun:stunserver.org',
-				createIceServer 'stun:stun01.sipphone.com',
-				createIceServer 'stun:stun.ekiga.net',
-				createIceServer 'stun:stun.fwdnet.net',
-				createIceServer 'turn:wlsvps1.mooo.com:3478', 'uchicago', 'roulette'
+				createIceServer('stun:stun.l.google.com:19302'),
+				createIceServer('stun:stunserver.org'),
+				createIceServer('stun:stun01.sipphone.com'),
+				createIceServer('stun:stun.ekiga.net'),
+				createIceServer('stun:stun.fwdnet.net'),
+				createIceServer('turn:wlsvps1.mooo.com:3478', 'uchicago', 'roulette')
 			]
 		}
 	}
@@ -79,8 +79,10 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 	$scope.supported = true
 	$scope.connected = false
 	$scope.waiting = true
+	$scope.localVerified = false
 	$scope.remoteVerified = false
 	$scope.messages = []
+	iceCandidates = []
 	getUserMedia {audio: true, video: true}, (stream) ->
 		attachMediaStream($('#local-video')[0], stream)
 		$scope.toggleLocalStream = (type) ->
@@ -150,12 +152,15 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 					console.log err
 
 			$rootScope.$on 'sockjs:candidate', (e, data) ->
-				console.log "received remote candidate"
-				conn.addIceCandidate(new RTCIceCandidate(data.candidate))	
+				iceCandidates.push new RTCIceCandidate(data.candidate)
+				console.log "received remote ICE candidate"
 
 			$rootScope.$on 'sockjs:sdp',(e, data) ->
 				console.log "received remote SDP"
 				conn.setRemoteDescription new RTCSessionDescription(data.sdp), ->
+					for ic in iceCandidates
+						conn.addIceCandidate ic
+					iceCandidates = []	
 					if conn.remoteDescription.type == 'offer'
 						conn.createAnswer (desc) ->
 							conn.setLocalDescription desc, ->
@@ -169,6 +174,8 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 			$rootScope.$on 'sockjs:chat', (e, data) ->
 				$scope.messages.push "#{ dtNow() } #{ data.message }"
 
+			$rootScope.$on 'sockjs:localVerified', (e, data) ->
+				$scope.localVerified = data.verified
 			$rootScope.$on 'sockjs:remoteVerified', (e, data) ->
 				$scope.remoteVerified = data.verified
 

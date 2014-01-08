@@ -27,22 +27,25 @@
 			<div class="alert alert-danger" ng-show="gumDenied">
 				If you won't give us access to your webcam, we won't give you access either!	
 			</div>
-			<div class="alert alert-info" ng-show="!connected && !closed">
-				<span class="glyphicon glyphicon-signal"></span> Establishing connection to server...
-			</div>
-			<div class="alert alert-danger" ng-show="closed">
-				The connection to the server was lost. Try refreshing the page.
-			</div>
 			<div ng-show="supported">
 				<button class="btn btn-primary" ng-disabled="!(connected && !waiting)" ng-click="nextUser()">Next user</button>
 				<input type="checkbox" ng-model="muteVideo" ng-change="toggleLocalStream('video')"> Mute my video
 				<input type="checkbox" ng-model="muteAudio" ng-change="toggleLocalStream('audio')"> Mute my audio
 				<div style="margin-top: 1em;"></div>
-				<div class="alert alert-info" ng-show="connected && waiting">
-				<span class="glyphicon glyphicon-time"></span> Waiting for a partner...
-				</div>
 				<div class="alert alert-success" ng-show="connected && !waiting">
 					<span class="glyphicon glyphicon-ok"></span> CONNECTED
+				</div>
+				<div class="alert alert-info" ng-show="!connected && !closed">
+					<span class="glyphicon glyphicon-signal"></span> Establishing connection to server...
+				</div>
+				<div class="alert alert-danger" ng-show="closed">
+					The connection to the server was lost. Try refreshing the page.
+				</div>
+				<div class="alert alert-warning" ng-show="connected && !localVerified">
+					<span class="glyphicon glyphicon-exclamation-sign"></span> YOU ARE NOT ON THE CAMPUS NETWORK. Do you even go to UChicago?
+				</div>
+				<div class="alert alert-warning" ng-show="connected && !waiting && !remoteVerified">
+					<span class="glyphicon glyphicon-exclamation-sign"></span> YOUR PARTNER IS NOT ON THE CAMPUS NETWORK. Do they even go to UChicago?
 				</div>
 				<div class="row">
 					<div class="col-md-6">
@@ -51,10 +54,10 @@
 					</div>
 					<div class="col-md-6">
 						<h1>Not You</h1>
-						<div class="alert alert-warning" ng-show="connected && !waiting && !remoteVerified">
-							<span class="glyphicon glyphicon-exclamation-sign"> Do they even go to UChicago?
+						<div class="alert alert-info" ng-show="connected && waiting">
+							<span class="glyphicon glyphicon-time"></span> Waiting for a partner...
 						</div>
-						<video id="remote-video" class="webcam" autoplay poster="static/img/video-placeholder.png"></video>
+						<video id="remote-video" class="webcam" autoplay poster="static/img/video-placeholder.png" ng-show="connected && !waiting"></video>
 					</div>
 				</div>
 				<div class="row">
@@ -69,7 +72,7 @@
 
 			<hr>
 			<footer>
-				<p>(C) 2014 UChicago Roulette</p>
+				<p>&copy; 2014 UChicago Roulette</p>
 			</footer>
 		</div>
 
