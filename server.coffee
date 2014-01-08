@@ -84,9 +84,9 @@ chatServer.on 'connection', (conn) ->
 		if data.type?
 			conn.emit data.type, data
 	conn.on 'initialize', ->
-		#console.log "Initializing connection for #{ conn.id }"
 		lobby = lobby.filter (v) ->
 			return v.id != conn.id
+		conn.iceCandidates = []
 		if lobby.length > 0
 			partner = lobby.shift()
 			conn.partner = partner
