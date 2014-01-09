@@ -49,13 +49,17 @@ httpServer.listen 10001, '127.0.0.1'
 
 lobby = []
 
-# lobbyRotate is needed to force refreshing of SDP offers
-lobbyRotate = ->
-	if lobby.length > 0
-		user = lobby.shift()
-		user.writeJSON {type: 'refresh'}
-	setTimeout lobbyRotate, 15000
-lobbyRotate()
+# lobbyRefresh is needed to force refreshing of pending SDP offers
+lobbyRefresh = ->
+	newLobby = []
+	while lobby.length > 0
+		c = lobby.shift()
+		if c.sdpOfferTime? and Date.now() - c.sdpOfferTime > 15000
+			c.writeJSON {type: 'refresh'}
+		else
+			newLobby.push c
+	lobby = newLobby
+setInterval lobbyRefresh, 500
 
 dtNow = ->
 	return "[#{ moment().format('MM/DD/YYYY hh:mm:ss A') }]"
@@ -106,6 +110,7 @@ chatServer.on 'connection', (conn) ->
 
 	conn.on 'offer', (data) ->
 		conn.sdpOffer = data.sdp
+		conn.sdpOfferTime = Date.now()
 		lobby.push(conn)
 		#console.log "Received SDP offer from #{ conn.id }"
 		#console.log "Conns in lobby: #{ lobby.length }"
