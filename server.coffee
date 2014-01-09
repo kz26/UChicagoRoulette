@@ -135,7 +135,6 @@ chatServer.on 'connection', (conn) ->
 			console.log "#{ dtNow() } #{ data.message }"
 
 	leaveHandler = ->
-		console.log "#{ conn.id } disconnected"
 		lobby = lobby.filter (v) ->
 			return v.id != conn.id
 		if conn.partner?
@@ -143,7 +142,9 @@ chatServer.on 'connection', (conn) ->
 			conn.partner.partner = null
 
 	conn.on 'leave', ->
+		console.log "#{ conn.id } disconnected from their partner"
 		leaveHandler() 
 
 	conn.on 'close', (data) ->
+		console.log "#{ conn.id } disconnected from the server"
 		leaveHandler()
