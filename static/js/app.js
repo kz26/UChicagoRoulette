@@ -198,12 +198,12 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
       $rootScope.$on('sockjs:refresh', function() {
         return $scope.refresh();
       });
-      $rootScope.$on('sockjs:requestOffer', function() {
+      $rootScope.$on('sockjs:createOffer', function() {
         return conn.createOffer(function(desc) {
           return conn.setLocalDescription(desc, function() {
             console.log("sent SDP offer");
             return sockjs.sendJSON({
-              type: 'offer',
+              type: 'sdp',
               sdp: desc
             });
           });
@@ -251,7 +251,7 @@ MainCtrl = function($rootScope, $scope, $timeout, settings, moment, sockjs) {
       $rootScope.$on('sockjs:remoteVerified', function(e, data) {
         return $scope.remoteVerified = data.verified;
       });
-      $rootScope.$on('sockjs:remoteLeft', function() {
+      $rootScope.$on('sockjs:leave', function() {
         console.log("Remote left");
         $scope.waiting = true;
         return $scope.nextUser(false);

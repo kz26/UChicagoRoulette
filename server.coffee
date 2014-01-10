@@ -17,22 +17,9 @@ app.set 'ipWhitelist', [
 	'165.68.0.0/16',
 	'64.107.48.0/23'
 ]
-app.disable 'enableWhitelist'
-
-app.set 'overridePassword', 'worldoftanks'
 
 app.get '/', (req, res) ->
-	if app.get 'enableWhitelist'
-		if req.query.override == app.get('overridePassword') 
-			res.sendfile "#{ __dirname }/index.html"
-			return
-		for ipr in app.get('ipWhitelist')
-			if cidrMatch.cidr_match req.ip, ipr
-				res.sendfile "#{ __dirname }/index.html"	
-				return
-		res.sendfile "#{ __dirname }/bad_ip.html"
-	else
-		res.sendfile "#{ __dirname }/index.html"
+	res.sendfile "#{ __dirname }/index.html"
 	
 
 chatServer = sockjs.createServer {
@@ -47,22 +34,15 @@ httpServer = http.createServer app
 chatServer.installHandlers httpServer
 httpServer.listen 10001, '127.0.0.1'
 
-lobby = []
-
-# lobbyRefresh is needed to force refreshing of pending SDP offers
-lobbyRefresh = ->
-	newLobby = []
-	while lobby.length > 0
-		c = lobby.shift()
-		if c.sdpOfferTime? and Date.now() - c.sdpOfferTime > 15000
-			c.writeJSON {type: 'refresh'}
-		else
-			newLobby.push c
-	lobby = newLobby
-setInterval lobbyRefresh, 500
-
 dtNow = ->
 	return "[#{ moment().format('MM/DD/YYYY hh:mm:ss A') }]"
+
+lobby = []
+lobbyRefresh = ->
+	if lobby.length > 2
+		c = lobby.shift()
+		c.writeJSON {type: 'refresh'}
+		console.log "Sent refresh signal to #{ c.id }"
 
 chatServer.on 'connection', (conn) ->
 	conn.writeJSON = (data) ->
@@ -79,7 +59,6 @@ chatServer.on 'connection', (conn) ->
 			conn.verified = true
 			break
 
-	conn.iceCandidates = []
 	conn.writeJSON {type: 'localVerified', verified: conn.verified}
 	console.log "#{ conn.id } (verified: #{ conn.verified }) connected from #{ conn.ip }"
 
@@ -90,42 +69,26 @@ chatServer.on 'connection', (conn) ->
 	conn.on 'initialize', ->
 		lobby = lobby.filter (v) ->
 			return v.id != conn.id
-		conn.iceCandidates = []
 		if lobby.length > 0
 			partner = lobby.shift()
 			conn.partner = partner
 			partner.partner = conn
-			conn.writeJSON {type: 'sdp', sdp: partner.sdpOffer}
-			for ic in partner.iceCandidates
-				conn.writeJSON {type: 'candidate', candidate: ic}
-			partner.iceCandidates = []
-			for ic in conn.iceCandidates
-				conn.writeJSON {type: 'candidate', candidate: ic}
-			conn.iceCandidates = []
+			conn.writeJSON {type: 'createOffer'}
 			conn.writeJSON {type: 'remoteVerified', verified: partner.verified}
 			partner.writeJSON {type: 'remoteVerified', verified: conn.verified}
 			console.log "Partnered #{ conn.id } with #{ partner.id }"
 		else
-			conn.writeJSON {type: 'requestOffer'}
-
-	conn.on 'offer', (data) ->
-		conn.sdpOffer = data.sdp
-		conn.sdpOfferTime = Date.now()
-		lobby.push(conn)
-		#console.log "Received SDP offer from #{ conn.id }"
-		#console.log "Conns in lobby: #{ lobby.length }"
+			lobby.push conn
 
 	forwardHandler = (data) ->
 		if conn.partner?
 			conn.partner.writeJSON data
 
 	conn.on 'sdp', (data) ->
-		forwardHandler data
-
+			forwardHandler data
 
 	conn.on 'candidate', (data) ->
-		conn.iceCandidates.push data.candidate
-		forwardHandler data
+			forwardHandler data
 
 	conn.on 'chat', (data) ->
 		if data.message? and conn.partner?
@@ -138,7 +101,7 @@ chatServer.on 'connection', (conn) ->
 		lobby = lobby.filter (v) ->
 			return v.id != conn.id
 		if conn.partner?
-			conn.partner.writeJSON {type: 'remoteLeft'}
+			conn.partner.writeJSON {type: 'leave'}
 			conn.partner.partner = null
 
 	conn.on 'leave', ->

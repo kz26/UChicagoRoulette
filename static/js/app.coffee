@@ -142,11 +142,11 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 			$rootScope.$on 'sockjs:refresh', ->
 				$scope.refresh()
 
-			$rootScope.$on 'sockjs:requestOffer', ->
+			$rootScope.$on 'sockjs:createOffer', ->
 				conn.createOffer (desc) ->
 					conn.setLocalDescription desc, ->
 						console.log "sent SDP offer"
-						sockjs.sendJSON {type: 'offer', sdp: desc}
+						sockjs.sendJSON {type: 'sdp', sdp: desc}
 				, (err) ->
 					console.log err
 
@@ -180,7 +180,7 @@ MainCtrl = ($rootScope, $scope, $timeout, settings, moment, sockjs) ->
 			$rootScope.$on 'sockjs:remoteVerified', (e, data) ->
 				$scope.remoteVerified = data.verified
 
-			$rootScope.$on 'sockjs:remoteLeft', ->
+			$rootScope.$on 'sockjs:leave', ->
 				console.log "Remote left"
 				$scope.waiting = true
 				$scope.nextUser(false)
