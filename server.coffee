@@ -43,8 +43,7 @@ lobbyRefresh = ->
 		c = lobby.shift()
 		c.writeJSON {type: 'refresh'}
 		console.log "Sent refresh signal to #{ c.id }"
-	setTimeout lobbyRefresh, 1000
-lobbyRefresh()
+setInterval lobbyRefresh, 1000
 
 chatServer.on 'connection', (conn) ->
 	conn.writeJSON = (data) ->
