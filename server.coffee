@@ -39,10 +39,12 @@ dtNow = ->
 
 lobby = []
 lobbyRefresh = ->
-	if lobby.length > 2
+	if lobby.length >= 2
 		c = lobby.shift()
 		c.writeJSON {type: 'refresh'}
 		console.log "Sent refresh signal to #{ c.id }"
+	setTimeout lobbyRefresh, 1000
+lobbyRefresh()
 
 chatServer.on 'connection', (conn) ->
 	conn.writeJSON = (data) ->
