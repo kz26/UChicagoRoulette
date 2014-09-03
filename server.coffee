@@ -50,9 +50,8 @@ chatServer.on 'connection', (conn) ->
 	conn.writeJSON = (data) ->
 		conn.write JSON.stringify(data)
 
-	if app.get('trust proxy')
-		if conn.headers['x-forwarded-for']?
-			conn.ip = conn.headers['x-forwarded-for'].split(', ')[0]
+	if app.get('trust proxy') && conn.headers['x-forwarded-for']?
+		conn.ip = conn.headers['x-forwarded-for'].split(', ')[0]
 	else
 		conn.ip = conn.remoteAddress
 	conn.verified = false
