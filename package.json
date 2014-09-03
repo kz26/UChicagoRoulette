@@ -1,0 +1,27 @@
+{
+  "name": "UChicagoRoulette",
+  "version": "1.0.0",
+  "description": "A Chatroulette clone for members of the University of Chicago community (as defined by IP whitelisting), powered by HTML5, WebRTC, and Node.js.",
+  "main": "index.js",
+  "scripts": {
+    "start": "coffee server.coffee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kz26/UChicagoRoulette"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kz26/UChicagoRoulette/issues"
+  },
+  "homepage": "https://github.com/kz26/UChicagoRoulette",
+  "dependencies": {
+    "cidr_match": "0.0.7",
+    "coffee-script": "^1.8.0",
+    "express": "^3.16.9",
+    "moment": "^2.8.2",
+    "sockjs": "^0.3.9",
+    "validator": "^3.17.1"
+  }
+}

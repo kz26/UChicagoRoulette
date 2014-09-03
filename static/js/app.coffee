@@ -6,7 +6,7 @@ app.config ['$sceProvider', ($sceProvider) ->
 
 app.factory 'settings', ->
 	return {
-		sockUrl: 'http://uchicagoroulette.com/server',
+		sockUrl: document.querySelector('link[rel=sockUrl]').getAttribute('href'),
 		gumConf: {
 			audio: true,
 			video: {

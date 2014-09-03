@@ -11,7 +11,7 @@ app.config([
 
 app.factory('settings', function() {
   return {
-    sockUrl: 'http://uchicagoroulette.com/server',
+    sockUrl: document.querySelector('link[rel=sockUrl]').getAttribute('href'),
     gumConf: {
       audio: true,
       video: {

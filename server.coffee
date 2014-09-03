@@ -12,6 +12,7 @@ app.use express.compress()
 app.use "/static", express.static("#{ __dirname }/static")
 
 app.set 'ipWhitelist', [
+	'127.0.0.0/8',
 	'128.135.0.0/16',
 	'205.208.0.0/17',
 	'165.68.0.0/16',
@@ -49,9 +50,8 @@ chatServer.on 'connection', (conn) ->
 	conn.writeJSON = (data) ->
 		conn.write JSON.stringify(data)
 
-	if app.get('trust proxy')
-		if conn.headers['x-forwarded-for']?
-			conn.ip = conn.headers['x-forwarded-for'].split(', ')[0]
+	if app.get('trust proxy') && conn.headers['x-forwarded-for']?
+		conn.ip = conn.headers['x-forwarded-for'].split(', ')[0]
 	else
 		conn.ip = conn.remoteAddress
 	conn.verified = false
