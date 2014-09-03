@@ -12,6 +12,7 @@ app.use express.compress()
 app.use "/static", express.static("#{ __dirname }/static")
 
 app.set 'ipWhitelist', [
+	'127.0.0.0/8',
 	'128.135.0.0/16',
 	'205.208.0.0/17',
 	'165.68.0.0/16',
