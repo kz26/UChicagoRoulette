@@ -4,7 +4,7 @@
   "description": "A Chatroulette clone for members of the University of Chicago community (as defined by IP whitelisting), powered by HTML5, WebRTC, and Node.js.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "coffee server.coffee"
   },
   "repository": {
     "type": "git",
